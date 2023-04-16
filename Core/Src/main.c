@@ -42,7 +42,6 @@
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
-TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart2;
 
@@ -63,8 +62,8 @@ float dedt = 0;
 
 float deltaT = 0.001;
 
-float kp = 10;
-float ki = 0.21;
+float kp = 100;
+float ki = 0.05;
 float kd = 0;
 
 float u = 0;
@@ -76,7 +75,6 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
-static void MX_TIM5_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -118,7 +116,6 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
-  MX_TIM5_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim1);
@@ -129,7 +126,6 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim3);
 
-  HAL_TIM_Base_Start(&htim5);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -364,51 +360,6 @@ static void MX_TIM3_Init(void)
 }
 
 /**
-  * @brief TIM5 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM5_Init(void)
-{
-
-  /* USER CODE BEGIN TIM5_Init 0 */
-
-  /* USER CODE END TIM5_Init 0 */
-
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-
-  /* USER CODE BEGIN TIM5_Init 1 */
-
-  /* USER CODE END TIM5_Init 1 */
-  htim5.Instance = TIM5;
-  htim5.Init.Prescaler = 83;
-  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 4294967295;
-  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM5_Init 2 */
-
-  /* USER CODE END TIM5_Init 2 */
-
-}
-
-/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -479,7 +430,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 	if(htim == &htim3){
 
 		QEIReadRaw = __HAL_TIM_GET_COUNTER(&htim2);
-		motorReadDegree = (QEIReadRaw * 360) / 30720.0;
+		motorReadDegree = (QEIReadRaw * 36000) / 307200.0;
 
 		//error
 		e = setMotorDegree - motorReadDegree;
@@ -505,9 +456,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 
 		if(u < 0){
 			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, duty);
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, 0);
 		}
 		else if(u > 0){
 			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, duty);
+			__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
 		}
 
 		ePrev = e;
